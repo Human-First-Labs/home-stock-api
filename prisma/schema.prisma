@@ -32,11 +32,88 @@ model Users {
   id              String         @id @default(uuid()) @map("_id")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime?      @updatedAt
-  supabaseUid     String?        @unique
+  supabaseUid     String         @unique
   displayName     String?
   blocked         Boolean        @default(false)
   acceptedTermsOn DateTime?
   contactInfo     ContactInfo?
   imagePaths      String[]
   //Relations
+  items           Items[]
+  receiptScans    ReceiptScans[]
+  shoppingList    ShoppingList[]
+}
+
+model Items {
+  id             String           @id @default(uuid()) @map("_id")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime?        @updatedAt
+  title          String
+  warningAmount  Int?
+  //Relations
+  owner          Users            @relation(fields: [ownerId], references: [id])
+  ownerId        String
+  receiptLines   ReceiptLines[]
+  itemQuantities ItemQuantities[]
+}
+
+model ItemQuantities {
+  id            String        @id @default(uuid()) @map("_id")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime?     @updatedAt
+  receiptScanId String?
+  quantity      Int
+  //Relations
+  itemId        String
+  item          Items         @relation(fields: [itemId], references: [id])
+  receiptScan   ReceiptScans? @relation(fields: [receiptScanId], references: [id])
+}
+
+enum ReceiptScanStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model ReceiptScans {
+  id             String            @id @default(uuid()) @map("_id")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime?         @updatedAt
+  rawData        String
+  imagePath      String
+  status         ReceiptScanStatus @default(PENDING)
+  //Relations
+  owner          Users             @relation(fields: [ownerId], references: [id])
+  ownerId        String
+  itemQuantities ItemQuantities[]
+}
+
+model ReceiptLines {
+  id        String    @id @default(uuid()) @map("_id")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+  title     String //description from Veryfi
+  sku       String? //sku from Veryfi
+  upc       String? //upc from Veryfi
+  hsn       String? //hsn from Veryfi
+  reference String? //reference from Veryfi
+  //Relations
+  itemId    String
+  item      Items     @relation(fields: [itemId], references: [id])
+}
+
+type ShoppingListItem {
+  title           String
+  currentQuantity Int
+  warningAmount   Int
+}
+
+model ShoppingList {
+  id        String             @id @default(uuid()) @map("_id")
+  createdAt DateTime           @default(now())
+  updatedAt DateTime?          @updatedAt
+  items     ShoppingListItem[]
+  //Relations
+  owner     Users              @relation(fields: [ownerId], references: [id])
+  ownerId   String
 }
