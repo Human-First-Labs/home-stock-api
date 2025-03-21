@@ -6,6 +6,9 @@ import { SupabaseService } from './supabase-service'
 import { SocketService } from '../socket/socket-service'
 import http from 'http'
 import express from 'express'
+import { ItemService } from './item-service'
+import { ReceiptService } from './receipt-service'
+import { VeryfiService } from './veryfi-service'
 
 describe('User Service', () => {
     const prisma = new PrismaClient()
@@ -19,10 +22,27 @@ describe('User Service', () => {
     const socketService = SocketService({
         httpServer
     })
+
+    const itemService = ItemService({
+        prisma
+    })
+
+    const veryfiService = VeryfiService({
+        prisma,
+        supabaseService
+    })
+
+    const receiptService = ReceiptService({
+        prisma,
+        veryfiService
+    })
+
     const userService = UserService({
         prisma,
         socketService,
-        supabaseService
+        supabaseService,
+        itemService,
+        receiptService
     })
 
     it('run verify image test', async () => {

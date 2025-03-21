@@ -33,13 +33,12 @@ export const SupabaseRouter = (args: {
 
                 const result = await supabaseService.getOrCreateUserFromUid({
                     uid,
-                    anon: decodedToken.is_anonymous,
                     phone: decodedToken.phone
                 })
 
                 res.locals.phone = decodedToken.phone
                 res.locals.user = result.user
-                res.locals.anon = result.anon
+                res.locals.anon = decodedToken.is_anonymous
 
                 next()
             }

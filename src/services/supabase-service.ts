@@ -21,57 +21,50 @@ export const SupabaseService = (args: { prisma: PrismaClient }) => {
 
     }
 
-    const getOrCreateUserFromUid = async (args: { uid: string, phone: string, anon: boolean }) => {
-        const { uid, phone, anon } = args
+    const getOrCreateUserFromUid = async (args: { uid: string, phone: string }) => {
+        const { uid, phone } = args
 
-        if (anon) {
-            return {
-                anon: true
+
+        let user = await prisma.users.findFirst({
+            where: {
+                supabaseUid: uid
             }
-        } else {
-            let user = await prisma.users.findFirst({
-                where: {
-                    supabaseUid: uid
+        })
+
+        if (!user) {
+            user = await prisma.users.create({
+                data: {
+                    supabaseUid: uid,
+                    contactInfo: {
+                        phone: {
+                            phone,
+                            whatsapp: false
+                        }
+                    }
                 }
             })
 
-            if (!user) {
-                user = await prisma.users.create({
-                    data: {
-                        supabaseUid: uid,
-                        contactInfo: {
-                            phone: {
-                                phone,
-                                whatsapp: false
-                            }
-                        }
-                    }
-                })
+            return {
+                user
+            }
+        } else {
+            const imageUrls: string[] = []
 
-                return {
-                    user
-                }
-            } else {
-                const imageUrls: string[] = []
+            if (user.imagePaths) {
+                for (let i = 0; i < user.imagePaths.length; i++) {
+                    const url = await createSignedFileUrl({
+                        path: user.imagePaths[i]
+                    })
 
-                if (user.imagePaths) {
-                    for (let i = 0; i < user.imagePaths.length; i++) {
-                        const url = await createSignedFileUrl({
-                            path: user.imagePaths[i]
-                        })
-
-                        imageUrls.push(url.signedUrl)
-                    }
-                }
-                return {
-                    user: {
-                        ...user,
-                        imageUrls
-                    }
+                    imageUrls.push(url.signedUrl)
                 }
             }
-
-
+            return {
+                user: {
+                    ...user,
+                    imageUrls
+                }
+            }
         }
     }
 

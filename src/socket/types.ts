@@ -8,4 +8,4 @@ export interface SocketEvent {
 
 //These change
 
-export type SocketEventName = 'getFullStats' | 'getUserById' | 'getItemById' | 'getFilteredItems' | 'getAllTags'
+export type SocketEventName = 'getUserById' 
