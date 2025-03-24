@@ -15,7 +15,7 @@ datasource db {
 
 type PhoneInfo {
   phone    String
-  whatsapp Boolean
+  verified Boolean @default(false)
 }
 
 type EmailInfo {
@@ -108,11 +108,18 @@ type ShoppingListItem {
   warningAmount   Int
 }
 
+enum ShoppingListStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
 model ShoppingList {
   id        String             @id @default(uuid()) @map("_id")
   createdAt DateTime           @default(now())
   updatedAt DateTime?          @updatedAt
   items     ShoppingListItem[]
+  status    ShoppingListStatus @default(ACTIVE)
   //Relations
   owner     Users              @relation(fields: [ownerId], references: [id])
   ownerId   String

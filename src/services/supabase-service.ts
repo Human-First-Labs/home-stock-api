@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, PhoneInfo, EmailInfo, ContactInfo } from '@prisma/client'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { SB_SUPABASE_URL, SB_SERVICE_ROLE, SB_JWT_SECRET } from '../env/supabase'
 import { createClient } from '@supabase/supabase-js'
@@ -21,25 +21,28 @@ export const SupabaseService = (args: { prisma: PrismaClient }) => {
 
     }
 
-    const getOrCreateUserFromUid = async (args: { uid: string, phone: string }) => {
-        const { uid, phone } = args
+    const getOrCreateUserFromUid = async (args: {
+        uid: string, phone?: PhoneInfo, email?: EmailInfo
+    }) => {
+        const { uid, phone, email } = args
 
+        console.log('uid', uid)
 
-        let user = await prisma.users.findFirst({
+        let user = await prisma.users.findUnique({
             where: {
                 supabaseUid: uid
             }
         })
+
+        console.log('found it!', user)
 
         if (!user) {
             user = await prisma.users.create({
                 data: {
                     supabaseUid: uid,
                     contactInfo: {
-                        phone: {
-                            phone,
-                            whatsapp: false
-                        }
+                        phone,
+                        email
                     }
                 }
             })
@@ -48,20 +51,49 @@ export const SupabaseService = (args: { prisma: PrismaClient }) => {
                 user
             }
         } else {
+
+            const contactInfo: Partial<ContactInfo> = {
+                ...user.contactInfo
+            }
+
+            if (phone) {
+                contactInfo.phone = phone
+            }
+
+            if (email) {
+                contactInfo.email = email
+            }
+
+            const updatedUser = await prisma.users.update({
+                where: {
+                    id: user.id
+                },
+                data: {
+                    contactInfo
+                }
+            })
+
             const imageUrls: string[] = []
 
-            if (user.imagePaths) {
-                for (let i = 0; i < user.imagePaths.length; i++) {
+            if (updatedUser.imagePaths) {
+                for (let i = 0; i < updatedUser.imagePaths.length; i++) {
                     const url = await createSignedFileUrl({
-                        path: user.imagePaths[i]
+                        path: updatedUser.imagePaths[i]
                     })
 
                     imageUrls.push(url.signedUrl)
                 }
             }
+
+            console.log({
+                user: {
+                    ...updatedUser,
+                    imageUrls
+                }
+            })
             return {
                 user: {
-                    ...user,
+                    ...updatedUser,
                     imageUrls
                 }
             }

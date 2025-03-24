@@ -82,29 +82,6 @@ export const UserRouter = (args: {
         }
     })
 
-    router.post('/update/user/contact-info', async (req, res) => {
-        const { user, phone } = res.locals
-        const { enablePhone, enableWhatsapp, email } = req.body
-
-        try {
-
-            if (!user || !phone) {
-                throw customError('User not found', errorCodes.authorization)
-            }
-
-            await userService.updateUserContactInfo({
-                email,
-                enablePhone,
-                enableWhatsapp,
-                tokenPhone: phone,
-                user,
-            })
-        } catch (e: any) {
-            sendExpressError(res, e)
-        }
-
-    })
-
     router.post('/update/user/images', async (req, res) => {
         const { user } = res.locals
         const { images } = req.body

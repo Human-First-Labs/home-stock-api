@@ -23,40 +23,32 @@ export const SupabaseRouter = (args: {
             if (!decodedToken) {
                 throw customError('Invalid token.', errorCodes.authentication)
             }
+            console.log('decodedToken', decodedToken)
 
-            if (decodedToken.is_anonymous) {
-                res.locals.anon = decodedToken.is_anonymous
+            const uid = decodedToken.uid || decodedToken.sub
 
-                next()
-            } else {
-                const uid = decodedToken.uid || decodedToken.sub
+            console.log('uid', uid)
 
+            if (uid) {
                 const result = await supabaseService.getOrCreateUserFromUid({
                     uid,
-                    phone: decodedToken.phone
+                    phone: decodedToken.phone ? {
+                        phone: decodedToken.phone,
+                        verified: decodedToken.user_metadata?.phone_verified
+                    } : undefined,
+                    email: decodedToken.email ? {
+                        email: decodedToken.email,
+                        verified: decodedToken.user_metadata?.email_verified
+                    } : undefined
                 })
 
                 res.locals.phone = decodedToken.phone
                 res.locals.user = result.user
-                res.locals.anon = decodedToken.is_anonymous
-
-                next()
             }
+
+            next()
         } catch (e: any) {
             sendExpressError(res, e)
-        }
-    })
-
-    router.use(async (_, res, next) => {
-        const { user, anon } = res.locals
-
-        if (!user && !anon) {
-            sendExpressError(
-                res,
-                customError('No user found and not anon', errorCodes.serverSide)
-            )
-        } else {
-            next()
         }
     })
 

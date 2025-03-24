@@ -1,4 +1,4 @@
-import { ContactInfo, PrismaClient, Users } from '@prisma/client'
+import { PrismaClient, Users } from '@prisma/client'
 import { ISupabaseService } from './supabase-service'
 import { customError, errorCodes } from '../util'
 import { ISocketService } from '../socket/socket-service'
@@ -62,7 +62,6 @@ export const UserService = (args: {
                 contactInfo: {
                     phone: {
                         phone: '1234567890',
-                        whatsapp: false
                     }
                 },
                 displayName: 'Maurovic Cachia'
@@ -116,53 +115,6 @@ export const UserService = (args: {
         socketService.emitRequiredEvents({
             eventArgs: {
                 id: userId
-            },
-            eventName: 'getUserById',
-            pullData: getUserById
-        })
-    }
-
-    //This function allows the user to update their contact information
-    const updateUserContactInfo = async (args: {
-        user: Users
-        tokenPhone: string
-        enablePhone: boolean
-        enableWhatsapp: boolean
-        email?: string
-    }) => {
-        const { user, tokenPhone, enablePhone, enableWhatsapp, email } = args
-
-        if (!enablePhone && !email && !enableWhatsapp) {
-            throw new Error('At least one contact method must be enabled')
-        }
-
-        if (!enablePhone && enableWhatsapp) {
-            throw new Error('Whatsapp cannot be enabled without phone')
-        }
-
-        const newContactInfo: ContactInfo = {
-            phone: enablePhone ? {
-                phone: tokenPhone,
-                whatsapp: enableWhatsapp
-            } : null,
-            email: email ? {
-                email,
-                verified: email === user.contactInfo?.email?.email ? user.contactInfo?.email?.verified : false
-            } : null
-        }
-
-        await prisma.users.update({
-            where: {
-                id: user.id
-            },
-            data: {
-                contactInfo: newContactInfo
-            }
-        })
-
-        socketService.emitRequiredEvents({
-            eventArgs: {
-                id: user.id
             },
             eventName: 'getUserById',
             pullData: getUserById
@@ -291,7 +243,6 @@ export const UserService = (args: {
         updateTermsAcceptance,
         runUserIntroduction,
         updateUserDisplayName,
-        updateUserContactInfo,
         updateUserImages,
         getUserById,
         createUser,

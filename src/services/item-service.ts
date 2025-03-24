@@ -8,7 +8,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const getItemQuantity = async (args: { itemId: string }) => {
         const { itemId } = args
 
-        const item = await prisma.items.findFirst({
+        const item = await prisma.items.findUnique({
             where: {
                 id: itemId
             }
@@ -45,7 +45,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const updateItem = async (args: { ownerId: string, id: string, title?: string, warningAmount?: number }) => {
         const { ownerId, id, title, warningAmount } = args
 
-        const currentItem = await prisma.items.findFirst({
+        const currentItem = await prisma.items.findUnique({
             where: {
                 id,
                 ownerId
@@ -74,7 +74,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const manuallyUpdateItemQuantity = async (args: { ownerId: string, itemId: string, quantity: number }) => {
         const { ownerId, itemId, quantity } = args
 
-        const item = await prisma.items.findFirst({
+        const item = await prisma.items.findUnique({
             where: {
                 id: itemId,
                 ownerId
@@ -137,10 +137,72 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
         })
     }
 
+    const updateShoppingList = async (args: { ownerId: string, shoppingListId: string }) => {
+        const { ownerId, shoppingListId } = args
+
+        const shoppingList = await prisma.shoppingList.findUnique({
+            where: {
+                id: shoppingListId,
+                ownerId,
+                status: 'ACTIVE'
+            }
+        })
+
+        if (!shoppingList) {
+            throw new Error('Shopping list not found')
+        }
+
+        const items = await prisma.items.findMany({
+            where: {
+                ownerId
+            }
+        })
+
+        const shoppingListItems = (await Promise.all(items.map(async item => {
+
+            if (item.warningAmount === null || item.warningAmount === undefined) {
+                return undefined
+            }
+
+            const totalQuantity = await getItemQuantity({
+                itemId: item.id
+            })
+
+            if (totalQuantity < item.warningAmount) {
+                return {
+                    ...item,
+                    currentQuantity: totalQuantity
+                }
+            } else {
+                return undefined
+            }
+        }))).filter(item => item !== undefined)
+
+        await prisma.shoppingList.update({
+            where: {
+                id: shoppingListId
+            },
+            data: {
+                items: shoppingListItems.map(item => (
+                    {
+                        currentQuantity: item.currentQuantity,
+                        itemId: item.id,
+                        title: item.title,
+                        warningAmount: item.warningAmount as number
+                    }
+                ))
+            }
+        })
+
+
+
+
+    }
+
     const deleteItem = async (args: { ownerId: string, id: string }) => {
         const { ownerId, id } = args
 
-        const item = await prisma.items.findFirst({
+        const item = await prisma.items.findUnique({
             where: {
                 id,
                 ownerId
@@ -190,7 +252,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const deleteShoppingList = async (args: { ownerId: string, id: string }) => {
         const { ownerId, id } = args
 
-        const shoppingList = await prisma.shoppingList.findFirst({
+        const shoppingList = await prisma.shoppingList.findUnique({
             where: {
                 id,
                 ownerId
@@ -264,7 +326,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const getShoppingList = async (args: { ownerId: string, id: string }) => {
         const { ownerId, id } = args
 
-        const shoppingList = await prisma.shoppingList.findFirst({
+        const shoppingList = await prisma.shoppingList.findUnique({
             where: {
                 id,
                 ownerId
@@ -286,7 +348,8 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
         getShoppingLists,
         getShoppingList,
         deleteShoppingList,
-        deleteAllUserShoppingLists
+        deleteAllUserShoppingLists,
+        updateShoppingList
 
     }
 }

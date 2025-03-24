@@ -14,6 +14,7 @@ import { SocketRouter } from './socket/socket-router'
 import { ItemService } from './services/item-service'
 import { VeryfiService } from './services/veryfi-service'
 import { ReceiptService } from './services/receipt-service'
+import { sendExpressError, customError, errorCodes } from './util'
 
 const main = async () => {
     //Database Setup
@@ -82,6 +83,22 @@ const main = async () => {
     app.use(supabaseRouter)
 
     app.use(socketRouter)
+
+    app.use(async (_, res, next) => {
+        const { user } = res.locals
+
+        console.log('user', user)
+
+        if (!user) {
+            sendExpressError(
+                res,
+                customError('No user found', errorCodes.serverSide)
+            )
+        } else {
+            next()
+        }
+    })
+
     app.use(userRouter)
 
 
