@@ -1,15 +1,12 @@
 import { Router } from 'express'
 import { IUserService } from '../services/user-service'
 import { sendExpressError, customError, errorCodes } from '../util'
-import { ISocketService } from '../socket/socket-service'
-import { SocketEvent } from '../socket/types'
 
 export const UserRouter = (args: {
-    userService: IUserService,
-    socketService: ISocketService
+    userService: IUserService
 }) => {
     const router = Router()
-    const { userService, socketService } = args
+    const { userService } = args
 
     router.post('/run/user/intro', async (req, res) => {
         const { user } = res.locals
@@ -108,24 +105,12 @@ export const UserRouter = (args: {
 
     //-------------------------------------------------------------------------------------------------------
 
-    router.get('/get/my-user', async (req, res) => {
+    router.get('/get/my-user', async (_, res) => {
         const { user } = res.locals
-        const headers = req.headers
 
         try {
-            let event: SocketEvent | null = null
-            if (user) {
-                event = await socketService.handleSocketHeaders({
-                    headers,
-                    eventName: 'getUserById',
-                    argument: {
-                        id: user.id
-                    }
-                })
-            }
             res.status(200).send({
                 user,
-                socketEvent: event
             })
         } catch (e: any) {
             sendExpressError(res, e)

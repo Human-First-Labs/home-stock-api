@@ -26,7 +26,6 @@ export const SupabaseService = (args: { prisma: PrismaClient }) => {
     }) => {
         const { uid, phone, email } = args
 
-        console.log('uid', uid)
 
         let user = await prisma.users.findUnique({
             where: {

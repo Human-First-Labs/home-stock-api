@@ -3,7 +3,6 @@
 import { PrismaClient } from '@prisma/client'
 import { UserService } from './user-service'
 import { SupabaseService } from './supabase-service'
-import { SocketService } from '../socket/socket-service'
 import http from 'http'
 import express from 'express'
 import { ItemService } from './item-service'
@@ -18,9 +17,6 @@ describe('User Service', () => {
 
     const supabaseService = SupabaseService({
         prisma
-    })
-    const socketService = SocketService({
-        httpServer
     })
 
     const itemService = ItemService({
@@ -39,13 +35,12 @@ describe('User Service', () => {
 
     const userService = UserService({
         prisma,
-        socketService,
         supabaseService,
         itemService,
         receiptService
     })
 
     it('run verify image test', async () => {
-        await userService.createUser()
+        await userService.createTestUser()
     })
 })

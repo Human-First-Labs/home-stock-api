@@ -1,12 +1,11 @@
-import { PrismaClient } from "@prisma/client"
 import Client from "@veryfi/veryfi-sdk"
 import { VERYFI_API_KEY, VERYFI_CLIENT_ID, VERYFI_CLIENT_SECRET, VERYFI_USERNAME } from "../env/veryfi"
 import { ISupabaseService } from "./supabase-service"
 
 export type IVeryfiService = ReturnType<typeof VeryfiService>
 
-export const VeryfiService = (args: { prisma: PrismaClient, supabaseService: ISupabaseService }) => {
-    const { prisma, supabaseService } = args
+export const VeryfiService = (args: { supabaseService: ISupabaseService }) => {
+    const { supabaseService } = args
 
 
     const veryfi = new Client(VERYFI_CLIENT_ID, VERYFI_CLIENT_SECRET, VERYFI_USERNAME, VERYFI_API_KEY)
@@ -28,18 +27,9 @@ export const VeryfiService = (args: { prisma: PrismaClient, supabaseService: ISu
 
         const response = await veryfi.process_document_from_url(url.signedUrl)
 
-        const savedScan = await prisma.receiptScans.create({
-            data: {
-                ownerId,
-                imagePath: uploaded.path,
-                rawData: JSON.stringify(response),
-            }
-        })
-
-
         return {
             rawResponse: response,
-            scanEntity: savedScan
+            path: uploaded.path,
         }
     }
 

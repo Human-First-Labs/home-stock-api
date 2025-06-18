@@ -9,12 +9,12 @@ import { Settings } from 'luxon'
 import { UserService } from './services/user-service'
 import { SupabaseRouter } from './routers/supabase-router'
 import { UserRouter } from './routers/user-router'
-import { SocketService } from './socket/socket-service'
-import { SocketRouter } from './socket/socket-router'
 import { ItemService } from './services/item-service'
 import { VeryfiService } from './services/veryfi-service'
 import { ReceiptService } from './services/receipt-service'
 import { sendExpressError, customError, errorCodes } from './util'
+import { ItemRouter } from './routers/item-router'
+import { ReceiptRouter } from './routers/receipt-router'
 
 const main = async () => {
     //Database Setup
@@ -39,16 +39,11 @@ const main = async () => {
     //Socket IO Setup
     const httpServer = http.createServer(app)
 
-    const socketService = SocketService({
-        httpServer
-    })
-
 
     //Timezone Setup
     Settings.defaultZone = "Europe/Malta"
 
     const veryfiService = VeryfiService({
-        prisma,
         supabaseService
     })
 
@@ -62,32 +57,28 @@ const main = async () => {
     const userService = UserService({
         prisma,
         supabaseService,
-        socketService,
         itemService,
         receiptService
     })
 
     //Local Routers
     const supabaseRouter = SupabaseRouter({ supabaseService })
-
     const userRouter = UserRouter({
         userService,
-        socketService
     })
-    const socketRouter = SocketRouter({
-        socketService
+    const itemRouter = ItemRouter({
+        itemService
+    })
+    const receiptRouter = ReceiptRouter({
+        receiptService
     })
 
 
     //API Routes
     app.use(supabaseRouter)
 
-    app.use(socketRouter)
-
     app.use(async (_, res, next) => {
         const { user } = res.locals
-
-        console.log('user', user)
 
         if (!user) {
             sendExpressError(
@@ -100,8 +91,8 @@ const main = async () => {
     })
 
     app.use(userRouter)
-
-
+    app.use(itemRouter)
+    app.use(receiptRouter)
 
     await new Promise<void>((resolve) => httpServer.listen({ port: PORT }, resolve))
 

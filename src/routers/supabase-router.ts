@@ -23,11 +23,8 @@ export const SupabaseRouter = (args: {
             if (!decodedToken) {
                 throw customError('Invalid token.', errorCodes.authentication)
             }
-            console.log('decodedToken', decodedToken)
 
             const uid = decodedToken.uid || decodedToken.sub
-
-            console.log('uid', uid)
 
             if (uid) {
                 const result = await supabaseService.getOrCreateUserFromUid({

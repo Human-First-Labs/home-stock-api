@@ -1,7 +1,6 @@
 import { PrismaClient, Users } from '@prisma/client'
 import { ISupabaseService } from './supabase-service'
 import { customError, errorCodes } from '../util'
-import { ISocketService } from '../socket/socket-service'
 import { IItemService } from './item-service'
 import { IReceiptService } from './receipt-service'
 
@@ -10,11 +9,11 @@ export type IUserService = ReturnType<typeof UserService>
 export const UserService = (args: {
     prisma: PrismaClient
     supabaseService: ISupabaseService,
-    socketService: ISocketService,
     itemService: IItemService,
     receiptService: IReceiptService
 }) => {
-    const { prisma, supabaseService, socketService, itemService, receiptService } = args
+    const { prisma, supabaseService,
+        itemService, receiptService } = args
 
     // Setters for the App Frontend----------------------------------------------
 
@@ -40,16 +39,16 @@ export const UserService = (args: {
             }
         })
 
-        socketService.emitRequiredEvents({
-            eventArgs: {
-                id: userId
-            },
-            eventName: 'getUserById',
-            pullData: getUserById
-        })
+        // socketService.emitRequiredEvents({
+        //     eventArgs: {
+        //         id: userId
+        //     },
+        //     eventName: 'getUserById',
+        //     pullData: getUserById
+        // })
     }
 
-    const createUser = async () => {
+    const createTestUser = async () => {
         const data = await supabaseService.createTestUser()
 
         if (!data.data.user) {
@@ -86,13 +85,13 @@ export const UserService = (args: {
             }
         })
 
-        socketService.emitRequiredEvents({
-            eventArgs: {
-                id: userId
-            },
-            eventName: 'getUserById',
-            pullData: getUserById
-        })
+        // socketService.emitRequiredEvents({
+        //     eventArgs: {
+        //         id: userId
+        //     },
+        //     eventName: 'getUserById',
+        //     pullData: getUserById
+        // })
     }
 
     //This function allows the user to update their display name
@@ -112,13 +111,13 @@ export const UserService = (args: {
             }
         })
 
-        socketService.emitRequiredEvents({
-            eventArgs: {
-                id: userId
-            },
-            eventName: 'getUserById',
-            pullData: getUserById
-        })
+        // socketService.emitRequiredEvents({
+        //     eventArgs: {
+        //         id: userId
+        //     },
+        //     eventName: 'getUserById',
+        //     pullData: getUserById
+        // })
     }
 
     //This function allows the user to upload images for their account
@@ -171,13 +170,13 @@ export const UserService = (args: {
             }
         })
 
-        socketService.emitRequiredEvents({
-            eventArgs: {
-                id: user.id
-            },
-            eventName: 'getUserById',
-            pullData: getUserById
-        })
+        // socketService.emitRequiredEvents({
+        //     eventArgs: {
+        //         id: user.id
+        //     },
+        //     eventName: 'getUserById',
+        //     pullData: getUserById
+        // })
     }
 
     const deleteUser = async (args: {
@@ -245,7 +244,7 @@ export const UserService = (args: {
         updateUserDisplayName,
         updateUserImages,
         getUserById,
-        createUser,
+        createTestUser,
         deleteUser
     }
 }

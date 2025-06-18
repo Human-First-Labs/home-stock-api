@@ -45,28 +45,16 @@ model Users {
 }
 
 model Items {
-  id             String           @id @default(uuid()) @map("_id")
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime?        @updatedAt
-  title          String
-  warningAmount  Int?
+  id                  String                @id @default(uuid()) @map("_id")
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime?             @updatedAt
+  title               String
+  warningAmount       Int?
+  quantity            Int
   //Relations
-  owner          Users            @relation(fields: [ownerId], references: [id])
-  ownerId        String
-  receiptLines   ReceiptLines[]
-  itemQuantities ItemQuantities[]
-}
-
-model ItemQuantities {
-  id            String        @id @default(uuid()) @map("_id")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime?     @updatedAt
-  receiptScanId String?
-  quantity      Int
-  //Relations
-  itemId        String
-  item          Items         @relation(fields: [itemId], references: [id])
-  receiptScan   ReceiptScans? @relation(fields: [receiptScanId], references: [id])
+  owner               Users                 @relation(fields: [ownerId], references: [id])
+  ownerId             String
+  learnedReceiptLines LearnedReceiptLines[]
 }
 
 enum ReceiptScanStatus {
@@ -75,20 +63,43 @@ enum ReceiptScanStatus {
   CANCELLED
 }
 
-model ReceiptScans {
-  id             String            @id @default(uuid()) @map("_id")
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime?         @updatedAt
-  rawData        String
-  imagePath      String
-  status         ReceiptScanStatus @default(PENDING)
-  //Relations
-  owner          Users             @relation(fields: [ownerId], references: [id])
-  ownerId        String
-  itemQuantities ItemQuantities[]
+enum ReceiptScanLineStatus {
+  PENDING
+  COMPLETED
 }
 
-model ReceiptLines {
+type ActionableLineInfo {
+  title          String
+  existingItemId String? //ID of the existing item in the user's inventory, if applicable 
+  ignore         Boolean?
+  quantityChange Int?
+}
+
+type ReceiptLineType {
+  title          String //description from Veryfi
+  sku            String? //sku from Veryfi
+  upc            String? //upc from Veryfi
+  hsn            String? //hsn from Veryfi
+  reference      String? //reference from Veryfi
+  status         ReceiptScanLineStatus @default(PENDING)
+  quantity       Int //quantity of the item, if applicable
+  actionableInfo ActionableLineInfo
+}
+
+model ReceiptScans {
+  id        String            @id @default(uuid()) @map("_id")
+  createdAt DateTime          @default(now())
+  updatedAt DateTime?         @updatedAt
+  rawData   String
+  imagePath String
+  status    ReceiptScanStatus @default(PENDING)
+  lines     ReceiptLineType[] //Array of ReceiptLineType objects
+  //Relations
+  owner     Users             @relation(fields: [ownerId], references: [id])
+  ownerId   String
+}
+
+model LearnedReceiptLines {
   id        String    @id @default(uuid()) @map("_id")
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -97,9 +108,10 @@ model ReceiptLines {
   upc       String? //upc from Veryfi
   hsn       String? //hsn from Veryfi
   reference String? //reference from Veryfi
+  ignore    Boolean   @default(false)
   //Relations
-  itemId    String
-  item      Items     @relation(fields: [itemId], references: [id])
+  itemId    String?
+  item      Items?    @relation(fields: [itemId], references: [id])
 }
 
 type ShoppingListItem {
