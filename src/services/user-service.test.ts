@@ -24,7 +24,6 @@ describe('User Service', () => {
     })
 
     const veryfiService = VeryfiService({
-        prisma,
         supabaseService
     })
 
