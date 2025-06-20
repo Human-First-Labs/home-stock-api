@@ -69,9 +69,10 @@ export const ItemRouter = (args: {
         }
     })
 
-    router.patch('/update/item', async (req, res) => {
+    router.patch('/update/item/:id', async (req, res) => {
         const { user } = res.locals
-        const { id, title, warningAmount } = req.body
+        const { id } = req.params
+        const { title, warningAmount } = req.body
 
         try {
             if (!user) {
@@ -98,9 +99,10 @@ export const ItemRouter = (args: {
 
     })
 
-    router.post('/update/item/quantity', async (req, res) => {
+    router.post('/update/item/quantity/:id', async (req, res) => {
         const { user } = res.locals
-        const { id, quantityChange } = req.body
+        const { id } = req.params
+        const { quantityChange } = req.body
 
         try {
             if (!user) {
@@ -129,9 +131,9 @@ export const ItemRouter = (args: {
         }
     })
 
-    router.delete('/delete/item', async (req, res) => {
+    router.delete('/delete/item/:id', async (req, res) => {
         const { user } = res.locals
-        const { id } = req.body
+        const { id } = req.params
 
         try {
             if (!user) {

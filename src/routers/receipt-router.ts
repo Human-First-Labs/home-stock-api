@@ -66,7 +66,7 @@ export const ReceiptRouter = (args: {
 
     })
 
-    router.post('/confirm/receipt/:id', async (req, res) => {
+    router.patch('/confirm/receipt/:id', async (req, res) => {
         const { user } = res.locals
         const { id } = req.params
 
@@ -79,17 +79,19 @@ export const ReceiptRouter = (args: {
                 throw new Error('Receipt ID is required')
             }
 
-            await receiptService.confirmReceiptScan({
+            const result = await receiptService.confirmReceiptScan({
                 ownerId: user.id,
                 receiptScanId: id
             })
-            res.status(200).send({ message: 'Receipt confirmed successfully' })
+            res.status(200).send({
+                unconfirmedLines: result.lines
+            })
         } catch (e: any) {
             sendExpressError(res, e)
         }
     })
 
-    router.post('/confirm/receipt/line/:id', async (req, res) => {
+    router.patch('/confirm/receipt/line/:id', async (req, res) => {
         const { user } = res.locals
         const { id } = req.params
         const { actionedInfo, line } = req.body
@@ -107,13 +109,15 @@ export const ReceiptRouter = (args: {
                 throw new Error('Actioned info is required')
             }
 
-            await receiptService.confirmReceiptLine({
+            const result = await receiptService.confirmReceiptLine({
                 ownerId: user.id,
                 receiptScanId: id,
                 line,
                 actionedInfo
             })
-            res.status(200).send({ message: 'Receipt line confirmed successfully' })
+            res.status(200).send({
+                unconfirmedLines: result.lines
+            })
         } catch (e: any) {
             sendExpressError(res, e)
         }

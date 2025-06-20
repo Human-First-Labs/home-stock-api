@@ -468,6 +468,10 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                 status: unconfirmedLines.length === 0 ? 'COMPLETED' : 'PENDING'
             }
         })
+
+        return {
+            lines: unconfirmedLines
+        }
     }
 
 
