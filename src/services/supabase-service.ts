@@ -33,8 +33,6 @@ export const SupabaseService = (args: { prisma: PrismaClient }) => {
             }
         })
 
-        console.log('found it!', user)
-
         if (!user) {
             user = await prisma.users.create({
                 data: {

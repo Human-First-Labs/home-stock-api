@@ -83,9 +83,9 @@ export const ReceiptRouter = (args: {
                 ownerId: user.id,
                 receiptScanId: id
             })
-            res.status(200).send({
+            res.status(200).send(result ? {
                 unconfirmedLines: result.lines
-            })
+            } : undefined)
         } catch (e: any) {
             sendExpressError(res, e)
         }
@@ -115,9 +115,9 @@ export const ReceiptRouter = (args: {
                 line,
                 actionedInfo
             })
-            res.status(200).send({
+            res.status(200).send(result ? {
                 unconfirmedLines: result.lines
-            })
+            } : undefined)
         } catch (e: any) {
             sendExpressError(res, e)
         }

@@ -21,11 +21,15 @@ export const ItemRouter = (args: {
                 throw customError('Title is required', errorCodes.clientSide)
             }
 
+            if (quantity === undefined || quantity === null) {
+                throw customError('Quantity is required', errorCodes.clientSide)
+            }
+
             const item = await itemService.createItem({
                 ownerId: user.id,
                 title,
                 warningAmount,
-                quantity: quantity || 0, // Default quantity is set to 0
+                quantity: quantity
             })
 
             res.status(201).send({
@@ -72,7 +76,7 @@ export const ItemRouter = (args: {
     router.patch('/update/item/:id', async (req, res) => {
         const { user } = res.locals
         const { id } = req.params
-        const { title, warningAmount } = req.body
+        const { title, warningAmount, quantity } = req.body
 
         try {
             if (!user) {
@@ -88,6 +92,7 @@ export const ItemRouter = (args: {
                 id,
                 title,
                 warningAmount,
+                quantity
             })
 
             res.status(200).send({
@@ -99,7 +104,7 @@ export const ItemRouter = (args: {
 
     })
 
-    router.post('/update/item/quantity/:id', async (req, res) => {
+    router.patch('/update/item/quantity/:id', async (req, res) => {
         const { user } = res.locals
         const { id } = req.params
         const { quantityChange } = req.body

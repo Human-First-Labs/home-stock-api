@@ -8,6 +8,10 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const createItem = async (args: { ownerId: string, title: string, warningAmount?: number, quantity: number }) => {
         const { ownerId, title, warningAmount, quantity } = args
 
+        if (quantity < 0) {
+            throw new Error('Quantity cannot be negative')
+        }
+
         const item = await prisma.items.create({
             data: {
                 ownerId,
@@ -43,8 +47,8 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
 
     }
 
-    const updateItem = async (args: { ownerId: string, id: string, title?: string, warningAmount?: number }) => {
-        const { ownerId, id, title, warningAmount } = args
+    const updateItem = async (args: { ownerId: string, id: string, title?: string, warningAmount?: number, quantity?: number }) => {
+        const { ownerId, id, title, warningAmount, quantity } = args
 
         const currentItem = await prisma.items.findUnique({
             where: {
@@ -57,6 +61,9 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
             throw new Error('Item not found')
         }
 
+        if (quantity && quantity < 0) {
+            throw new Error('Quantity cannot be negative')
+        }
 
         const item = await prisma.items.update({
             where: {
@@ -64,7 +71,8 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
             },
             data: {
                 title,
-                warningAmount
+                warningAmount,
+                quantity
             }
         })
 
@@ -231,6 +239,9 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
         const items = await prisma.items.findMany({
             where: {
                 ownerId
+            },
+            orderBy: {
+                title: 'asc'
             }
         })
 
@@ -244,7 +255,10 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
         const shoppingLists = await prisma.shoppingList.findMany({
             where: {
                 ownerId
-            }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
         })
 
         return shoppingLists

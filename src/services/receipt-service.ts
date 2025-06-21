@@ -174,9 +174,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
         })
 
         if (scans.length === 0) {
-            return {
-                status: 'NO_PENDING_SCANS',
-            }
+            return
         }
 
         const scan = scans[0]
@@ -267,7 +265,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             }
         })
 
-        return {
+        return unconfirmedLines.length === 0 ? undefined : {
             lines: unconfirmedLines
         }
     }
@@ -469,7 +467,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             }
         })
 
-        return {
+        return unconfirmedLines.length === 0 ? undefined : {
             lines: unconfirmedLines
         }
     }
