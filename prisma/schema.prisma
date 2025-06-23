@@ -115,15 +115,10 @@ model LearnedReceiptLines {
 }
 
 type ShoppingListItem {
+  id              String
   title           String
   currentQuantity Int
   warningAmount   Int
-}
-
-enum ShoppingListStatus {
-  ACTIVE
-  COMPLETED
-  CANCELLED
 }
 
 model ShoppingList {
@@ -131,7 +126,6 @@ model ShoppingList {
   createdAt DateTime           @default(now())
   updatedAt DateTime?          @updatedAt
   items     ShoppingListItem[]
-  status    ShoppingListStatus @default(ACTIVE)
   //Relations
   owner     Users              @relation(fields: [ownerId], references: [id])
   ownerId   String

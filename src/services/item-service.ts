@@ -178,13 +178,17 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
             }
         }))).filter(item => item !== undefined)
 
+        if (shoppingList.length === 0) {
+            throw new Error('No items in shopping list')
+        }
+
         await prisma.shoppingList.create({
             data: {
                 ownerId,
                 items: shoppingList.map(item => (
                     {
+                        id: item.id,
                         currentQuantity: item.currentQuantity,
-                        itemId: item.id,
                         title: item.title,
                         warningAmount: item.warningAmount as number
                     }

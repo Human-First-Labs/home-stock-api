@@ -82,12 +82,6 @@ export const SupabaseService = (args: { prisma: PrismaClient }) => {
                 }
             }
 
-            console.log({
-                user: {
-                    ...updatedUser,
-                    imageUrls
-                }
-            })
             return {
                 user: {
                     ...updatedUser,

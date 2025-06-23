@@ -182,6 +182,32 @@ export const ItemRouter = (args: {
 
     })
 
+    router.delete('/delete/shopping-list/:id', async (req, res) => {
+        const { user } = res.locals
+        const { id } = req.params
+
+        try {
+            if (!user) {
+                throw customError('User not found', errorCodes.authorization)
+            }
+
+            if (!id) {
+                throw customError('Shopping List ID is required', errorCodes.clientSide)
+            }
+
+            await itemService.deleteShoppingList({
+                ownerId: user.id,
+                id,
+            })
+
+            res.status(200).send({
+                message: 'Shopping List deleted successfully',
+            })
+        } catch (e: any) {
+            sendExpressError(res, e)
+        }
+    })
+
     //-------------------------------------------------------------------------------------------------------
 
     router.get('/get/my-items', async (_, res) => {
