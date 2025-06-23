@@ -36,7 +36,10 @@ export const ReceiptRouter = (args: {
             const lines = await receiptService.getCurrentScan({
                 ownerId: user.id
             })
-            res.status(200).json(lines)
+
+            console.log('lines', lines)
+
+            res.status(200).json(lines || {})
         } catch (e: any) {
             sendExpressError(res, e)
         }
@@ -123,6 +126,22 @@ export const ReceiptRouter = (args: {
         }
     })
 
+    router.get('/get/month-scan-number', async (_, res) => {
+        const { user } = res.locals
+
+        try {
+            if (!user) {
+                throw new Error('User not found')
+            }
+
+            const result = await receiptService.getCurrentMonthScans({
+                ownerId: user.id
+            })
+            res.status(200).json(result)
+        } catch (e: any) {
+            sendExpressError(res, e)
+        }
+    })
 
     return router
 }

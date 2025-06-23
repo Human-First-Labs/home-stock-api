@@ -83,7 +83,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                 existingItemId: existingLine.item?.id || null,
                 ignore: existingLine.ignore,
                 quantityChange: line.quantity,
-                title: line.title,
+                existingItemTitle: existingLine.title,
             }
         }
 
@@ -91,7 +91,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             existingItemId: null,
             ignore: null,
             quantityChange: line.quantity,
-            title: line.title,
+            existingItemTitle: null,
         }
 
     }
@@ -416,9 +416,9 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                 })
             }
             console.info('Line Ignored')
-        } else if (currentActionableLine.actionableInfo.ignore) {
+        } else if (currentActionableLine.actionableInfo?.ignore) {
             console.info('Line Ignored')
-        } else if (currentActionableLine.actionableInfo.existingItemId) {
+        } else if (currentActionableLine.actionableInfo?.existingItemId) {
 
             const currentItem = await prisma.items.findUnique({
                 where: {
@@ -472,7 +472,31 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
         }
     }
 
+    const getCurrentMonthScans = async (args: {
+        ownerId: string,
+    }) => {
 
+        const { ownerId } = args
+
+        const currentDate = new Date()
+        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+
+        const scanNumber = await prisma.verifyScan.count({
+            where: {
+                ownerId,
+                createdAt: {
+                    gte: startOfMonth,
+                    lte: endOfMonth
+                }
+            }
+        })
+
+        return {
+            number: scanNumber
+        }
+
+    }
 
     return {
         uploadReceipt,
@@ -481,6 +505,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
         getCurrentScan,
         confirmReceiptScan,
         confirmReceiptLine,
-        cancelReceiptScan
+        cancelReceiptScan,
+        getCurrentMonthScans
     }
 }

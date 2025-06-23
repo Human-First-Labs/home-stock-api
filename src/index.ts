@@ -44,6 +44,7 @@ const main = async () => {
     Settings.defaultZone = "Europe/Malta"
 
     const veryfiService = VeryfiService({
+        prisma,
         supabaseService
     })
 

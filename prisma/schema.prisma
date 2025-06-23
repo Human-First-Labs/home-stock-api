@@ -42,6 +42,7 @@ model Users {
   items           Items[]
   receiptScans    ReceiptScans[]
   shoppingList    ShoppingList[]
+  verifyScans     VerifyScan[]
 }
 
 model Items {
@@ -69,10 +70,10 @@ enum ReceiptScanLineStatus {
 }
 
 type ActionableLineInfo {
-  title          String
-  existingItemId String? //ID of the existing item in the user's inventory, if applicable 
-  ignore         Boolean?
-  quantityChange Int?
+  existingItemTitle String?
+  existingItemId    String? //ID of the existing item in the user's inventory, if applicable 
+  ignore            Boolean?
+  quantityChange    Int?
 }
 
 type ReceiptLineType {
@@ -128,5 +129,13 @@ model ShoppingList {
   items     ShoppingListItem[]
   //Relations
   owner     Users              @relation(fields: [ownerId], references: [id])
+  ownerId   String
+}
+
+model VerifyScan {
+  id        String   @id @default(uuid()) @map("_id")
+  createdAt DateTime @default(now())
+  //Relations
+  owner     Users    @relation(fields: [ownerId], references: [id])
   ownerId   String
 }
