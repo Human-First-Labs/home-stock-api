@@ -61,6 +61,8 @@ const main = async () => {
         receiptService
     })
 
+    const prefix = '/api'
+
     //Local Routers
     const supabaseRouter = SupabaseRouter({ supabaseService })
     const userRouter = UserRouter({
@@ -75,9 +77,9 @@ const main = async () => {
 
 
     //API Routes
-    app.use(supabaseRouter)
+    app.use(prefix, supabaseRouter)
 
-    app.use(async (_, res, next) => {
+    app.use(prefix, async (_, res, next) => {
         const { user } = res.locals
 
         if (!user) {
@@ -90,9 +92,9 @@ const main = async () => {
         }
     })
 
-    app.use(userRouter)
-    app.use(itemRouter)
-    app.use(receiptRouter)
+    app.use(prefix, userRouter)
+    app.use(prefix, itemRouter)
+    app.use(prefix, receiptRouter)
 
     await new Promise<void>((resolve) => httpServer.listen({ port: PORT }, resolve))
 
