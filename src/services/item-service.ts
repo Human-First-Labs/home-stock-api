@@ -24,28 +24,28 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
         return item
     }
 
-    const createItemFromReceiptLine = async (args: { ownerId: string, title: string, warningAmount?: number, quantity: number, receiptLineId: string }) => {
-        const { ownerId, title, warningAmount, quantity, receiptLineId } = args
+    // const createItemFromReceiptLine = async (args: { ownerId: string, title: string, warningAmount?: number, quantity: number, receiptLine: ReceiptLineType }) => {
+    //     const { ownerId, title, warningAmount, quantity, receiptLine } = args
 
-        const item = await createItem({
-            ownerId,
-            title,
-            warningAmount,
-            quantity
-        })
+    //     const item = await createItem({
+    //         ownerId,
+    //         title,
+    //         warningAmount,
+    //         quantity
+    //     })
 
-        await prisma.learnedReceiptLines.update({
-            where: {
-                id: receiptLineId
-            },
-            data: {
-                itemId: item.id
-            }
-        })
+    //     await prisma.learnedReceiptLines.update({
+    //         where: {
+    //             id: receiptLineId
+    //         },
+    //         data: {
+    //             itemId: item.id
+    //         }
+    //     })
 
-        return item
+    //     return item
 
-    }
+    // }
 
     const updateItem = async (args: { ownerId: string, id: string, title?: string, warningAmount?: number, quantity?: number }) => {
         const { ownerId, id, title, warningAmount, quantity } = args
@@ -284,7 +284,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
 
     return {
         createItem,
-        createItemFromReceiptLine,
+        // createItemFromReceiptLine,
         updateItem,
         updateItemQuantity,
         generateShoppingList,

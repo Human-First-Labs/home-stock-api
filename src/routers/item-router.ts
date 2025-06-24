@@ -40,38 +40,38 @@ export const ItemRouter = (args: {
         }
     })
 
-    router.post('/create/item/from-receipt-line', async (req, res) => {
-        const { user } = res.locals
-        const { title, warningAmount, quantity, receiptLineId } = req.body
+    // router.post('/create/item/from-receipt-line', async (req, res) => {
+    //     const { user } = res.locals
+    //     const { title, warningAmount, quantity, receiptLineId } = req.body
 
-        try {
-            if (!user) {
-                throw customError('User not found', errorCodes.authorization)
-            }
+    //     try {
+    //         if (!user) {
+    //             throw customError('User not found', errorCodes.authorization)
+    //         }
 
-            if (!title) {
-                throw customError('Title is required', errorCodes.clientSide)
-            }
+    //         if (!title) {
+    //             throw customError('Title is required', errorCodes.clientSide)
+    //         }
 
-            if (!receiptLineId) {
-                throw customError('Receipt Line ID is required', errorCodes.clientSide)
-            }
+    //         if (!receiptLineId) {
+    //             throw customError('Receipt Line ID is required', errorCodes.clientSide)
+    //         }
 
-            const item = await itemService.createItemFromReceiptLine({
-                ownerId: user.id,
-                title,
-                warningAmount,
-                quantity: quantity || 0, // Default quantity is set to 0
-                receiptLineId,
-            })
+    //         const item = await itemService.createItemFromReceiptLine({
+    //             ownerId: user.id,
+    //             title,
+    //             warningAmount,
+    //             quantity: quantity || 0, // Default quantity is set to 0
+    //             receiptLineId,
+    //         })
 
-            res.status(201).send({
-                item,
-            })
-        } catch (e: any) {
-            sendExpressError(res, e)
-        }
-    })
+    //         res.status(201).send({
+    //             item,
+    //         })
+    //     } catch (e: any) {
+    //         sendExpressError(res, e)
+    //     }
+    // })
 
     router.patch('/update/item/:id', async (req, res) => {
         const { user } = res.locals
