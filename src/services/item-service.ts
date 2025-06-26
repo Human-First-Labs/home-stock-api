@@ -168,7 +168,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
                 return undefined
             }
 
-            if (item.quantity < item.warningAmount) {
+            if (item.quantity <= item.warningAmount) {
                 return {
                     ...item,
                     currentQuantity: item.quantity
