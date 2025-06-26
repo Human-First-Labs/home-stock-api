@@ -15,7 +15,7 @@ datasource db {
 
 type PhoneInfo {
   phone    String
-  whatsapp Boolean
+  verified Boolean @default(false)
 }
 
 type EmailInfo {
@@ -32,11 +32,110 @@ model Users {
   id              String         @id @default(uuid()) @map("_id")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime?      @updatedAt
-  supabaseUid     String?        @unique
+  supabaseUid     String         @unique
   displayName     String?
   blocked         Boolean        @default(false)
   acceptedTermsOn DateTime?
   contactInfo     ContactInfo?
   imagePaths      String[]
   //Relations
+  items           Items[]
+  receiptScans    ReceiptScans[]
+  shoppingList    ShoppingList[]
+  verifyScans     VerifyScan[]
+}
+
+model Items {
+  id                  String                @id @default(uuid()) @map("_id")
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime?             @updatedAt
+  title               String
+  warningAmount       Int?
+  quantity            Int
+  //Relations
+  owner               Users                 @relation(fields: [ownerId], references: [id])
+  ownerId             String
+  learnedReceiptLines LearnedReceiptLines[]
+}
+
+enum ReceiptScanStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum ReceiptScanLineStatus {
+  PENDING
+  COMPLETED
+}
+
+type ActionableLineInfo {
+  existingItemTitle String?
+  existingItemId    String? //ID of the existing item in the user's inventory, if applicable 
+  ignore            Boolean?
+  quantityChange    Int?
+}
+
+type ReceiptLineType {
+  title          String //description from Veryfi
+  sku            String? //sku from Veryfi
+  upc            String? //upc from Veryfi
+  hsn            String? //hsn from Veryfi
+  reference      String? //reference from Veryfi
+  status         ReceiptScanLineStatus @default(PENDING)
+  quantity       Int //quantity of the item, if applicable
+  actionableInfo ActionableLineInfo
+}
+
+model ReceiptScans {
+  id        String            @id @default(uuid()) @map("_id")
+  createdAt DateTime          @default(now())
+  updatedAt DateTime?         @updatedAt
+  rawData   String
+  imagePath String
+  status    ReceiptScanStatus @default(PENDING)
+  lines     ReceiptLineType[] //Array of ReceiptLineType objects
+  //Relations
+  owner     Users             @relation(fields: [ownerId], references: [id])
+  ownerId   String
+}
+
+model LearnedReceiptLines {
+  id        String    @id @map("_id") //this is a hash of title,sku,upc,hsn,reference in that order
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+  title     String //description from Veryfi
+  sku       String? //sku from Veryfi
+  upc       String? //upc from Veryfi
+  hsn       String? //hsn from Veryfi
+  reference String? //reference from Veryfi
+  ignore    Boolean   @default(false)
+  //Relations
+  itemId    String?
+  item      Items?    @relation(fields: [itemId], references: [id])
+}
+
+type ShoppingListItem {
+  id              String
+  title           String
+  currentQuantity Int
+  warningAmount   Int
+}
+
+model ShoppingList {
+  id        String             @id @default(uuid()) @map("_id")
+  createdAt DateTime           @default(now())
+  updatedAt DateTime?          @updatedAt
+  items     ShoppingListItem[]
+  //Relations
+  owner     Users              @relation(fields: [ownerId], references: [id])
+  ownerId   String
+}
+
+model VerifyScan {
+  id        String   @id @default(uuid()) @map("_id")
+  createdAt DateTime @default(now())
+  //Relations
+  owner     Users    @relation(fields: [ownerId], references: [id])
+  ownerId   String
 }
