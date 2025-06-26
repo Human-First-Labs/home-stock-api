@@ -1,17 +1,23 @@
-import { ActionableLineInfo, Items, PrismaClient, ReceiptLineType } from "@prisma/client"
+import { ActionableLineInfo, PrismaClient, ReceiptLineType } from "@prisma/client"
 import { IVeryfiService } from "./veryfi-service"
 import { VeryfiDocument } from "@veryfi/veryfi-sdk/lib/types/VeryfiDocument"
+import crypto from 'crypto'
 
 export type IReceiptService = ReturnType<typeof ReceiptService>
 
 export interface ActionedInfoLine {
-    differentItemId?: string
-    newItem?: Partial<Items>
+    itemId?: string
     ignore?: boolean
 }
 
 export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVeryfiService }) => {
     const { prisma, veryfiService } = args
+
+    const generateLearnedLineId = (args: ReceiptLineType) => {
+        const { title, sku, upc, hsn, reference } = args
+        let data = `${title}|${sku}|${upc}|${hsn}|${reference}`
+        return crypto.createHash('md5').update(data).digest("hex");
+    }
 
     const extractReceiptLines = async (args: { document: VeryfiDocument }) => {
 
@@ -64,14 +70,12 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
     }): Promise<ActionableLineInfo> => {
         const { line } = args
 
+        const id = generateLearnedLineId(line)
+
         // Check if the line already exists in the database
         const existingLine = await prisma.learnedReceiptLines.findFirst({
             where: {
-                title: line.title,
-                sku: line.sku,
-                upc: line.upc,
-                hsn: line.hsn,
-                reference: line.reference
+                id
             },
             include: {
                 item: true
@@ -169,7 +173,6 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
         const scans = await prisma.receiptScans.findMany({
             where: {
                 ownerId,
-                status: 'PENDING'
             }
         })
 
@@ -179,11 +182,9 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
 
         const scan = scans[0]
 
-        const pendingLines = scan.lines.filter(line => line.status === 'PENDING')
-
         return {
             id: scan.id,
-            lines: pendingLines
+            lines: scan.lines
         }
 
     }
@@ -233,8 +234,8 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             throw new Error('Scan not found')
         }
 
-        const unconfirmedLines: ReceiptLineType[] = []
-        const updatedLines: ReceiptLineType[] = []
+        // const unconfirmedLines: ReceiptLineType[] = []
+        // const updatedLines: ReceiptLineType[] = []
 
         for (let i = 0; i < scan.lines.length; i++) {
             const line = scan.lines[i]
@@ -246,24 +247,37 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                     line,
                     actionedInfo: null
                 })
-                updatedLines.push({
-                    ...line,
-                    status: 'COMPLETED'
-                })
+                // updatedLines.push({
+                //     ...line,
+                //     status: 'COMPLETED'
+                // })
             } catch (e) {
-                unconfirmedLines.push(line)
+                // unconfirmedLines.push(line)
             }
         }
 
-        await prisma.receiptScans.update({
+        const updatedScan = await prisma.receiptScans.findUnique({
             where: {
-                id: scan.id
-            },
-            data: {
-                lines: updatedLines,
-                status: unconfirmedLines.length === 0 ? 'COMPLETED' : 'PENDING'
+                id: receiptScanId,
+                ownerId
             }
         })
+
+        if (!updatedScan) {
+            throw new Error('Scan not found after confirmation')
+        }
+
+        const unconfirmedLines = updatedScan.lines.filter(line => line.status === 'PENDING')
+
+        // await prisma.receiptScans.update({
+        //     where: {
+        //         id: scan.id
+        //     },
+        //     data: {
+        //         lines: updatedLines,
+        //         status: unconfirmedLines.length === 0 ? 'COMPLETED' : 'PENDING'
+        //     }
+        // })
 
         return unconfirmedLines.length === 0 ? undefined : {
             lines: unconfirmedLines
@@ -301,20 +315,19 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             throw new Error('Line not found in pending lines')
         }
 
+        const id = generateLearnedLineId(currentActionableLine)
+
         const existingLearnedLine = await prisma.learnedReceiptLines.findFirst({
             where: {
-                title: currentActionableLine.title,
-                sku: currentActionableLine.sku,
-                upc: currentActionableLine.upc,
-                hsn: currentActionableLine.hsn,
-                reference: currentActionableLine.reference
+                id
             },
         })
 
-        if (actionedInfo?.differentItemId) {
-            const currentItem = await prisma.items.findUnique({
+        let currentItem = null
+        if (actionedInfo?.itemId) {
+            currentItem = await prisma.items.findUnique({
                 where: {
-                    id: actionedInfo.differentItemId
+                    id: actionedInfo.itemId
                 }
             })
 
@@ -326,7 +339,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
 
             await prisma.items.update({
                 where: {
-                    id: actionedInfo.differentItemId
+                    id: actionedInfo.itemId
                 },
                 data: {
                     quantity: updatedQuantity
@@ -334,78 +347,53 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             })
 
 
-            if (existingLearnedLine && existingLearnedLine?.itemId !== actionedInfo.differentItemId) {
-                await prisma.learnedReceiptLines.update({
-                    where: {
-                        id: existingLearnedLine.id
-                    },
-                    data: {
-                        itemId: actionedInfo.differentItemId,
-                        ignore: false,
-                    }
-                })
-            } else {
-                await prisma.learnedReceiptLines.create({
-                    data: {
-                        title: currentActionableLine.title,
-                        sku: currentActionableLine.sku,
-                        upc: currentActionableLine.upc,
-                        hsn: currentActionableLine.hsn,
-                        reference: currentActionableLine.reference,
-                        itemId: actionedInfo.differentItemId,
-                        ignore: false,
-                    }
-                })
-            }
-
-        } else if (actionedInfo?.newItem) {
-
-            const newItem = await prisma.items.create({
-                data: {
-                    ownerId,
-                    title: actionedInfo.newItem.title || '',
-                    warningAmount: actionedInfo.newItem.warningAmount,
-                    quantity: currentActionableLine.quantity,
+            if (existingLearnedLine) {
+                if (existingLearnedLine?.itemId !== actionedInfo.itemId) {
+                    await prisma.learnedReceiptLines.update({
+                        where: {
+                            id: existingLearnedLine.id
+                        },
+                        data: {
+                            itemId: actionedInfo.itemId,
+                            ignore: false,
+                        }
+                    })
                 }
-            })
-
-            if (existingLearnedLine && existingLearnedLine?.itemId !== newItem.id) {
-                await prisma.learnedReceiptLines.update({
-                    where: {
-                        id: existingLearnedLine.id
-                    },
-                    data: {
-                        itemId: newItem.id,
-                        ignore: false,
-                    }
-                })
             } else {
+                const id = generateLearnedLineId(currentActionableLine)
                 await prisma.learnedReceiptLines.create({
                     data: {
+                        id,
                         title: currentActionableLine.title,
                         sku: currentActionableLine.sku,
                         upc: currentActionableLine.upc,
                         hsn: currentActionableLine.hsn,
                         reference: currentActionableLine.reference,
-                        itemId: newItem.id,
+                        itemId: actionedInfo.itemId,
                         ignore: false,
                     }
                 })
             }
-        } else if (actionedInfo?.ignore) {
-            if (existingLearnedLine && !existingLearnedLine?.ignore) {
-                await prisma.learnedReceiptLines.update({
-                    where: {
-                        id: existingLearnedLine.id
-                    },
-                    data: {
-                        itemId: null,
-                        ignore: true,
-                    }
-                })
+        }
+        else if (actionedInfo?.ignore) {
+            if (existingLearnedLine) {
+                if (!existingLearnedLine?.ignore) {
+                    await prisma.learnedReceiptLines.update({
+                        where: {
+                            id: existingLearnedLine.id
+                        },
+                        data: {
+                            itemId: null,
+                            ignore: true,
+                        }
+                    })
+
+                }
             } else {
+                const id = generateLearnedLineId(currentActionableLine)
                 await prisma.learnedReceiptLines.create({
                     data: {
+                        id,
                         title: currentActionableLine.title,
                         sku: currentActionableLine.sku,
                         upc: currentActionableLine.upc,
@@ -420,7 +408,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             console.info('Line Ignored')
         } else if (currentActionableLine.actionableInfo?.existingItemId) {
 
-            const currentItem = await prisma.items.findUnique({
+            currentItem = await prisma.items.findUnique({
                 where: {
                     id: currentActionableLine.actionableInfo.existingItemId
                 }
@@ -448,6 +436,12 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             if (l.title === line.title && l.sku === line.sku && l.upc === line.upc && l.hsn === line.hsn && l.reference === line.reference) {
                 return {
                     ...l,
+                    actionableInfo: {
+                        ...l.actionableInfo,
+                        existingItemId: actionedInfo?.itemId || l.actionableInfo?.existingItemId || null,
+                        ignore: actionedInfo?.ignore || l.actionableInfo?.ignore || null,
+                        existingItemTitle: l.actionableInfo.existingItemTitle || currentItem?.title || null
+                    },
                     status: 'COMPLETED',
                 }
             } else {

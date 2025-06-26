@@ -37,8 +37,6 @@ export const ReceiptRouter = (args: {
                 ownerId: user.id
             })
 
-            console.log('lines', lines)
-
             res.status(200).json(lines || {})
         } catch (e: any) {
             sendExpressError(res, e)
