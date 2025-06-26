@@ -173,6 +173,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
         const scans = await prisma.receiptScans.findMany({
             where: {
                 ownerId,
+                status: 'PENDING'
             }
         })
 
