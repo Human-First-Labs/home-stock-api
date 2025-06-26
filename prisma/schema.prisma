@@ -41,8 +41,8 @@ model Users {
   //Relations
   items           Items[]
   receiptScans    ReceiptScans[]
-  shoppingList    ShoppingList[]
-  verifyScans     VerifyScan[]
+  shoppingList    ShoppingLists[]
+  verifyScans     VerifyScans[]
 }
 
 model Items {
@@ -122,7 +122,7 @@ type ShoppingListItem {
   warningAmount   Int
 }
 
-model ShoppingList {
+model ShoppingLists {
   id        String             @id @default(uuid()) @map("_id")
   createdAt DateTime           @default(now())
   updatedAt DateTime?          @updatedAt
@@ -132,7 +132,7 @@ model ShoppingList {
   ownerId   String
 }
 
-model VerifyScan {
+model VerifyScans {
   id        String   @id @default(uuid()) @map("_id")
   createdAt DateTime @default(now())
   //Relations
