@@ -182,7 +182,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
             throw new Error('No items in shopping list')
         }
 
-        await prisma.shoppingList.create({
+        await prisma.shoppingLists.create({
             data: {
                 ownerId,
                 items: shoppingList.map(item => (
@@ -200,7 +200,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const deleteShoppingList = async (args: { ownerId: string, id: string }) => {
         const { ownerId, id } = args
 
-        const shoppingList = await prisma.shoppingList.findUnique({
+        const shoppingList = await prisma.shoppingLists.findUnique({
             where: {
                 id,
                 ownerId
@@ -211,7 +211,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
             throw new Error('Shopping list not found')
         }
 
-        await prisma.shoppingList.delete({
+        await prisma.shoppingLists.delete({
             where: {
                 id
             }
@@ -221,7 +221,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const deleteAllUserShoppingLists = async (args: { ownerId: string }) => {
         const { ownerId } = args
 
-        const shoppingLists = await prisma.shoppingList.findMany({
+        const shoppingLists = await prisma.shoppingLists.findMany({
             where: {
                 ownerId
             }
@@ -256,7 +256,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const getShoppingLists = async (args: { ownerId: string }) => {
         const { ownerId } = args
 
-        const shoppingLists = await prisma.shoppingList.findMany({
+        const shoppingLists = await prisma.shoppingLists.findMany({
             where: {
                 ownerId
             },
@@ -271,7 +271,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
     const getShoppingList = async (args: { ownerId: string, id: string }) => {
         const { ownerId, id } = args
 
-        const shoppingList = await prisma.shoppingList.findUnique({
+        const shoppingList = await prisma.shoppingLists.findUnique({
             where: {
                 id,
                 ownerId

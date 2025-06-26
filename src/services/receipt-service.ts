@@ -477,7 +477,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
         const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
         const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
 
-        const scanNumber = await prisma.verifyScan.count({
+        const scanNumber = await prisma.verifyScans.count({
             where: {
                 ownerId,
                 createdAt: {
