@@ -171,11 +171,13 @@ export const ItemRouter = (args: {
             }
 
             // Assuming itemService has a method to generate shopping lists
-            await itemService.generateShoppingList({
+            const shoppingList = await itemService.generateShoppingList({
                 ownerId: user.id,
             })
 
-            res.status(200).send()
+            res.status(200).send({
+                shoppingList
+            })
         } catch (e: any) {
             sendExpressError(res, e)
         }

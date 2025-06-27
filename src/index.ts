@@ -76,6 +76,11 @@ const main = async () => {
         receiptService
     })
 
+    app.get(`${prefix}/health`, (_, res) => {
+        res.status(200).send({
+            active: true
+        })
+    })
 
     //API Routes
     app.use(prefix, supabaseRouter)

@@ -182,7 +182,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
             throw new Error('No items in shopping list')
         }
 
-        await prisma.shoppingLists.create({
+        return await prisma.shoppingLists.create({
             data: {
                 ownerId,
                 items: shoppingList.map(item => (
