@@ -29,12 +29,12 @@ type ContactInfo {
 }
 
 model Users {
-  id              String         @id @default(uuid()) @map("_id")
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime?      @updatedAt
-  supabaseUid     String         @unique
+  id              String          @id @default(uuid()) @map("_id")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime?       @updatedAt
+  supabaseUid     String          @unique
   displayName     String?
-  blocked         Boolean        @default(false)
+  blocked         Boolean         @default(false)
   acceptedTermsOn DateTime?
   contactInfo     ContactInfo?
   imagePaths      String[]
@@ -70,10 +70,11 @@ enum ReceiptScanLineStatus {
 }
 
 type ActionableLineInfo {
-  existingItemTitle String?
-  existingItemId    String? //ID of the existing item in the user's inventory, if applicable 
-  ignore            Boolean?
-  quantityChange    Int?
+  existingItemTitle  String?
+  existingItemId     String? //ID of the existing item in the user's inventory, if applicable 
+  ignore             Boolean?
+  quantityChange     Int
+  quantityMultiplier Int      @default(1)
 }
 
 type ReceiptLineType {
@@ -91,7 +92,6 @@ model ReceiptScans {
   id        String            @id @default(uuid()) @map("_id")
   createdAt DateTime          @default(now())
   updatedAt DateTime?         @updatedAt
-  rawData   String
   imagePath String
   status    ReceiptScanStatus @default(PENDING)
   lines     ReceiptLineType[] //Array of ReceiptLineType objects
@@ -101,18 +101,19 @@ model ReceiptScans {
 }
 
 model LearnedReceiptLines {
-  id        String    @id @map("_id") //this is a hash of title,sku,upc,hsn,reference in that order
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
-  title     String //description from Veryfi
-  sku       String? //sku from Veryfi
-  upc       String? //upc from Veryfi
-  hsn       String? //hsn from Veryfi
-  reference String? //reference from Veryfi
-  ignore    Boolean   @default(false)
+  id                 String    @id @map("_id") //this is a hash of title,sku,upc,hsn,reference in that order
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime? @updatedAt
+  title              String //description from Veryfi
+  sku                String? //sku from Veryfi
+  upc                String? //upc from Veryfi
+  hsn                String? //hsn from Veryfi
+  reference          String? //reference from Veryfi
+  quantityMultiplier Int       @default(1)
+  ignore             Boolean   @default(false)
   //Relations
-  itemId    String?
-  item      Items?    @relation(fields: [itemId], references: [id])
+  itemId             String?
+  item               Items?    @relation(fields: [itemId], references: [id])
 }
 
 type ShoppingListItem {
@@ -135,6 +136,7 @@ model ShoppingLists {
 model VerifyScans {
   id        String   @id @default(uuid()) @map("_id")
   createdAt DateTime @default(now())
+  rawData   String
   //Relations
   owner     Users    @relation(fields: [ownerId], references: [id])
   ownerId   String
