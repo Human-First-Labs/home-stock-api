@@ -7,11 +7,37 @@ export type IReceiptService = ReturnType<typeof ReceiptService>
 
 export interface ActionedInfoLine {
     itemId?: string
+    quantityMultiplier: number
+    quantityChange: number
     ignore?: boolean
 }
 
 export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVeryfiService }) => {
     const { prisma, veryfiService } = args
+
+    const migrateLearnedLines1 = async () => {
+        const learnedLines = await prisma.learnedReceiptLines.findMany({
+        })
+
+
+        const filteredLines = learnedLines.filter(line => {
+            return !line.quantityMultiplier || line.quantityMultiplier === 1
+        })
+
+        const ids = filteredLines.map(line => line.id)
+
+
+        await prisma.learnedReceiptLines.updateMany({
+            where: {
+                id: {
+                    in: ids
+                }
+            },
+            data: {
+                quantityMultiplier: 1
+            }
+        })
+    }
 
     const generateLearnedLineId = (args: ReceiptLineType) => {
         const { title, sku, upc, hsn, reference } = args
@@ -23,17 +49,20 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
 
         const { document } = args
 
-        const lines: ReceiptLineType[] = []
+        const lines: (ReceiptLineType & { id: string })[] = []
 
         if (!document.line_items) {
             throw new Error('No line items found')
         }
 
+
         for (const line of document.line_items) {
-            const infoObject: Partial<ReceiptLineType> = {}
+            const infoObject: Partial<(ReceiptLineType & { id: string })> = {}
 
             if (line.description && typeof line.description === 'string') {
                 infoObject.title = line.description
+            } else {
+                throw new Error('Line item description is required')
             }
 
             if (line.sku && typeof line.sku === 'string') {
@@ -54,14 +83,33 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
 
             infoObject.quantity = line.quantity && typeof line.quantity === 'number' ? line.quantity : undefined
 
-            infoObject.actionableInfo = await generateActionableLine({
-                line: infoObject as ReceiptLineType
-            })
+            const lineId = generateLearnedLineId(infoObject as ReceiptLineType)
 
-            lines.push(infoObject as ReceiptLineType)
+            const existentLine = lines.find(l => l.id === lineId)
+            if (existentLine) {
+                // If the line already exists, we can just update the quantity
+                existentLine.quantity += infoObject.quantity || 1
+
+                if (existentLine.actionableInfo.quantityChange) {
+                    existentLine.actionableInfo.quantityChange += infoObject.quantity || 1
+                }
+            } else {
+                infoObject.id = lineId
+
+                infoObject.actionableInfo = await generateActionableLine({
+                    line: infoObject as ReceiptLineType
+                })
+
+                lines.push(infoObject as (ReceiptLineType & { id: string }))
+
+            }
+
         }
 
-        return lines
+        return lines.map(line => ({
+            ...line,
+            id: undefined
+        })) as ReceiptLineType[]
 
     }
 
@@ -86,7 +134,8 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             return {
                 existingItemId: existingLine.item?.id || null,
                 ignore: existingLine.ignore,
-                quantityChange: line.quantity,
+                quantityChange: line.quantity * existingLine.quantityMultiplier,
+                quantityMultiplier: existingLine.quantityMultiplier,
                 existingItemTitle: existingLine.title,
             }
         }
@@ -96,6 +145,24 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             ignore: null,
             quantityChange: line.quantity,
             existingItemTitle: null,
+            quantityMultiplier: 1
+        }
+
+    }
+
+    const parseReceiptReponse = async (args: { response: VeryfiDocument }) => {
+        const { response } = args
+
+        if (!response || !response.line_items) {
+            throw new Error('Invalid response from Veryfi')
+        }
+
+
+        return {
+            rawData: JSON.stringify(response),
+            lines: await extractReceiptLines({
+                document: response,
+            })
         }
 
     }
@@ -113,14 +180,15 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             throw new Error('No response from Veryfi')
         }
 
+        const parsedResponse = await parseReceiptReponse({
+            response: rawResponse,
+        })
+
         const savedScan = await prisma.receiptScans.create({
             data: {
                 ownerId,
                 imagePath: path,
-                rawData: JSON.stringify(rawResponse),
-                lines: await extractReceiptLines({
-                    document: rawResponse,
-                })
+                lines: parsedResponse.lines
             }
         })
 
@@ -128,6 +196,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             scan: savedScan
         }
     }
+
 
     const deleteReceiptScan = async (args: { receiptScanId: string, ownerId: string, }) => {
         const { receiptScanId, ownerId } = args
@@ -316,6 +385,8 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
             throw new Error('Line not found in pending lines')
         }
 
+        const itemQuantity = actionedInfo?.quantityChange || currentActionableLine.quantity
+
         const id = generateLearnedLineId(currentActionableLine)
 
         const existingLearnedLine = await prisma.learnedReceiptLines.findFirst({
@@ -323,6 +394,9 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                 id
             },
         })
+
+
+        const itemChange = itemQuantity * (actionedInfo?.quantityMultiplier || existingLearnedLine?.quantityMultiplier || 1)
 
         let currentItem = null
         if (actionedInfo?.itemId) {
@@ -336,7 +410,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                 throw new Error('Item not found for different item confirmation')
             }
 
-            const updatedQuantity = currentItem.quantity + currentActionableLine.quantity
+            const updatedQuantity = currentItem.quantity + itemChange
 
             await prisma.items.update({
                 where: {
@@ -357,6 +431,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                         data: {
                             itemId: actionedInfo.itemId,
                             ignore: false,
+                            quantityMultiplier: actionedInfo?.quantityMultiplier || 1,
                         }
                     })
                 }
@@ -370,6 +445,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                         upc: currentActionableLine.upc,
                         hsn: currentActionableLine.hsn,
                         reference: currentActionableLine.reference,
+                        quantityMultiplier: actionedInfo?.quantityMultiplier || 1,
                         itemId: actionedInfo.itemId,
                         ignore: false,
                     }
@@ -400,6 +476,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                         upc: currentActionableLine.upc,
                         hsn: currentActionableLine.hsn,
                         reference: currentActionableLine.reference,
+                        quantityMultiplier: currentActionableLine.actionableInfo?.quantityMultiplier || 1,
                         ignore: true,
                     }
                 })
@@ -419,7 +496,7 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
                 throw new Error('Item not found for different item confirmation')
             }
 
-            const updatedQuantity = currentItem.quantity + currentActionableLine.quantity
+            const updatedQuantity = currentItem.quantity + itemChange
 
             await prisma.items.update({
                 where: {
@@ -501,6 +578,8 @@ export const ReceiptService = (args: { prisma: PrismaClient, veryfiService: IVer
         confirmReceiptScan,
         confirmReceiptLine,
         cancelReceiptScan,
-        getCurrentMonthScans
+        getCurrentMonthScans,
+        parseReceiptReponse,
+        migrateLearnedLines1
     }
 }

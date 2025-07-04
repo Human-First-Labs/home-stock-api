@@ -40,17 +40,18 @@ export const VeryfiService = (args: { prisma: PrismaClient, supabaseService: ISu
             path: 'receipts'
         })
 
-        await prisma.verifyScans.create({
-            data: {
-                ownerId,
-            }
-        })
-
         const url = await supabaseService.createSignedFileUrl({
             path: uploaded.path
         })
 
         const response = await veryfi.process_document_from_url(url.signedUrl)
+
+        await prisma.verifyScans.create({
+            data: {
+                ownerId,
+                rawData: JSON.stringify(uploaded),
+            }
+        })
 
         return {
             rawResponse: response,
