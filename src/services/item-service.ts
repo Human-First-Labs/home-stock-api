@@ -179,7 +179,7 @@ export const ItemService = (args: { prisma: PrismaClient }) => {
         }))).filter(item => item !== undefined)
 
         if (shoppingList.length === 0) {
-            throw new Error('No items in shopping list')
+            return null
         }
 
         return await prisma.shoppingLists.create({
